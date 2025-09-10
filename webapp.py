@@ -67,6 +67,11 @@ def format_schedule(day_name):
                 group_raw = lines[i].lstrip('-')
                 i += 1
                 continue
+            # Название группы вместо предмета (строка начинается с #)
+            if lines[i].startswith("#"):
+                subject = lines[i][1:]
+                i += 1
+                continue
             # Класс (например, 3PD, 4PU, 7B, 8C, 6A, 6D)
             if re.match(r"^\d+[A-Z]+$", lines[i]):
                 klass = lines[i]
@@ -78,7 +83,7 @@ def format_schedule(day_name):
                 i += 1
                 continue
             # Предмет
-            if not re.match(r"^\d+[A-Z]+$", lines[i]) and not re.match(r"^\d+\w*$", lines[i]) and not re.match(r"-?\d/\d", lines[i]):
+            if not re.match(r"^\d+[A-Z]+$", lines[i]) and not re.match(r"^\d+\w*$", lines[i]) and not re.match(r"-?\d/\d", lines[i]) and not lines[i].startswith("#"):
                 subject = lines[i]
                 i += 1
                 continue
