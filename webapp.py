@@ -287,18 +287,50 @@ def teachers():
     {% endif %}
     """, results=results, query=query)
 
-@app.route("/teacher_schedule")
+@app.route("/teacher_schedule", methods=["GET", "POST"])
 def teacher_schedule():
     url = request.args.get("url")
     if not url:
         return "Нет данных"
     schedule, headers = parse_teacher_schedule(url)
-    html = "<h2>Расписание учителя</h2>"
-    for day in headers:
-        html += f"<h3>{day}</h3>"
-        html += format_teacher_schedule_day(schedule, day)
-    html += '<br><a href="/teachers">Назад к поиску</a>'
-    return html
+    selected_day = headers[0]
+    if request.method == "POST":
+        selected_day = request.form.get("day", headers[0])
+    schedule_html = format_teacher_schedule_day(schedule, selected_day)
+    return render_template_string("""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Расписание учителя</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+            body { font-family: Arial, sans-serif; background: #f7f7f7; }
+            .container { max-width: 600px; margin: 30px auto; background: #fff; padding: 20px; border-radius: 10px; }
+            select, button { font-size: 1em; padding: 5px 10px; margin: 10px 0; }
+            .schedule { margin-top: 20px; }
+            blockquote { background: #eee; border-left: 4px solid #888; margin: 8px 0; padding: 8px 16px; border-radius: 6px; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h2>Расписание учителя</h2>
+            <form method="post">
+                <label for="day">День недели:</label>
+                <select name="day" id="day">
+                    {% for d in headers %}
+                        <option value="{{d}}" {% if d == selected_day %}selected{% endif %}>{{d}}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit">Показать</button>
+            </form>
+            <div class="schedule">
+                {{schedule_html|safe}}
+            </div>
+            <br><a href="/teachers">Назад к поиску</a>
+        </div>
+    </body>
+    </html>
+    """, headers=headers, selected_day=selected_day, schedule_html=schedule_html)
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
