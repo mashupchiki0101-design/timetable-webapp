@@ -66,21 +66,19 @@ def format_schedule(day_name):
                 subject = lines[i][1:]
                 i += 1
                 continue
-            # Класс (например, 3PD, 4PU, 7B, 8C, 6A, 6D)
-            if re.match(r"^\d+[A-Z]+$", lines[i]):
-                klass = lines[i]
-                i += 1
-                continue
             # Кабинет (номер с буквой, например 104, 104a, 115C, 9m)
             if re.match(r"^\d+\w*$", lines[i]) and not re.match(r"^\d+[A-Z]+$", lines[i]):
                 cabinet = lines[i]
                 i += 1
                 continue
-            # Предмет
-            if not re.match(r"^\d+[A-Z]+$", lines[i]) and not re.match(r"^\d+\w*$", lines[i]) and not lines[i].startswith("#"):
-                subject = lines[i]
+            # Класс (только если это реально класс, например 3PD, 4PU, 7B, 8C, 6A, 6D)
+            if re.match(r"^\d+[A-Z]+$", lines[i]):
+                klass = lines[i]
                 i += 1
                 continue
+            # Всё остальное считаем предметом
+            if subject is None:
+                subject = lines[i]
             i += 1
         # Форматирование: всё в одной цитате
         block = f"🕒 <b>{hour}</b>"
