@@ -16,7 +16,8 @@ day_map = {
 url = "https://dane.ek.zgora.pl/zse/plan/plany/o37.html"
 response = requests.get(url)
 soup = BeautifulSoup(response.content, "html.parser")
-token = "8283257106:AAHhjnNBNoQJYXhmIDV-Sfsi6I_qAVxgj_w"
+with open("token.txt", "r") as file:
+    token = file.read().strip()
 
 TEACHERS_PER_PAGE = 10
 search_query = ""
