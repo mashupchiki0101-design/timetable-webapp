@@ -60,13 +60,7 @@ def format_schedule(day_name):
         klass = None
         subject = None
         cabinet = None
-        group_raw = None
         while i < len(lines):
-            # Группа вида -1/2, -1/3, 1/2, 1/3 (и без минуса)
-            if re.match(r"-?\d/\d", lines[i]):
-                group_raw = lines[i].lstrip('-')
-                i += 1
-                continue
             # Название группы вместо предмета (строка начинается с #)
             if lines[i].startswith("#"):
                 subject = lines[i][1:]
@@ -83,7 +77,7 @@ def format_schedule(day_name):
                 i += 1
                 continue
             # Предмет
-            if not re.match(r"^\d+[A-Z]+$", lines[i]) and not re.match(r"^\d+\w*$", lines[i]) and not re.match(r"-?\d/\d", lines[i]) and not lines[i].startswith("#"):
+            if not re.match(r"^\d+[A-Z]+$", lines[i]) and not re.match(r"^\d+\w*$", lines[i]) and not lines[i].startswith("#"):
                 subject = lines[i]
                 i += 1
                 continue
@@ -94,12 +88,8 @@ def format_schedule(day_name):
             block += f": <b>{subject}</b>"
         if cabinet:
             block += f", кабинет <b>{cabinet}</b>"
-        if klass and group_raw:
-            block += f"<br>Класс: <b>{klass}, {group_raw}</b>"
-        elif klass:
+        if klass:
             block += f"<br>Класс: <b>{klass}</b>"
-        elif group_raw:
-            block += f"<br>Группа: <b>{group_raw}</b>"
         result.append(f"<blockquote>{block}</blockquote>")
     return "<br>".join(result) if result else "Нет занятий"
 
