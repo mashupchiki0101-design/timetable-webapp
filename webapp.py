@@ -228,27 +228,28 @@ def index():
     <head>
         <title>Расписание</title>
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <script src="https://telegram.org/js/telegram-web-app.js"></script>
-        <style>
-            body { font-family: Arial, sans-serif; background: #f7f7f7; }
-            .container { max-width: 600px; margin: 30px auto; background: #fff; padding: 20px; border-radius: 10px; }
-            select, button { font-size: 1em; padding: 5px 10px; margin: 10px 0; }
-            .schedule { margin-top: 20px; }
-            blockquote { background: #eee; border-left: 4px solid #888; margin: 8px 0; padding: 8px 16px; border-radius: 6px; }
-        </style>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     </head>
-    <body>
-        <div class="container">
-            <h2>Расписание</h2>
-            <a href="/teachers">Поиск по учителям</a>
-            <form method="post">
-                <label for="day">День недели:</label>
-                <select name="day" id="day">
-                    {% for d in headers %}
-                        <option value="{{d}}" {% if d == selected_day %}selected{% endif %}>{{d}}</option>
-                    {% endfor %}
-                </select>
-                <button type="submit">Показать</button>
+    <body class="bg-light">
+        <div class="container py-4">
+            <h2 class="mb-4">Расписание</h2>
+            <a href="/teachers" class="btn btn-primary mb-3">Поиск по учителям</a>
+            <form method="post" class="mb-4">
+                <div class="row g-2 align-items-center">
+                    <div class="col-auto">
+                        <label for="day" class="form-label mb-0">День недели:</label>
+                    </div>
+                    <div class="col-auto">
+                        <select name="day" id="day" class="form-select">
+                            {% for d in headers %}
+                                <option value="{{d}}" {% if d == selected_day %}selected{% endif %}>{{d}}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-auto">
+                        <button type="submit" class="btn btn-success">Показать</button>
+                    </div>
+                </div>
             </form>
             <div class="schedule">
                 {{schedule_html|safe}}
@@ -271,42 +272,33 @@ def teachers():
     <head>
         <title>Поиск по учителям</title>
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <style>
-            body { font-family: Arial, sans-serif; background: #f7f7f7; }
-            .container { max-width: 600px; margin: 30px auto; background: #fff; padding: 20px; border-radius: 10px; }
-            input[type="text"], button { font-size: 1em; padding: 5px 10px; margin: 10px 0; }
-            ul { padding-left: 0; }
-            li { list-style: none; margin-bottom: 12px; }
-            .teacher-block { background: #eee; border-left: 4px solid #888; padding: 8px 16px; border-radius: 6px; }
-            .teacher-name { font-weight: bold; margin-bottom: 6px; display: block; }
-            form { margin-top: 6px; }
-        </style>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     </head>
-    <body>
-        <div class="container">
-            <h2>Поиск по учителям</h2>
-            <form method="post">
-                <input type="text" name="search" placeholder="Введите имя или фамилию учителя" value="{{query}}">
-                <button type="submit">Поиск</button>
+    <body class="bg-light">
+        <div class="container py-4">
+            <h2 class="mb-4">Поиск по учителям</h2>
+            <form method="post" class="mb-4">
+                <div class="input-group">
+                    <input type="text" name="search" class="form-control" placeholder="Введите имя или фамилию учителя" value="{{query}}">
+                    <button type="submit" class="btn btn-primary">Поиск</button>
+                </div>
             </form>
             {% if results %}
-                <ul>
+                <div class="list-group">
                 {% for t in results %}
-                    <li>
-                        <div class="teacher-block">
-                            <span class="teacher-name">{{t.name}}</span>
-                            <form method="get" action="/teacher_schedule">
-                                <input type="hidden" name="url" value="{{t.url}}">
-                                <button type="submit">Показать расписание</button>
-                            </form>
-                        </div>
-                    </li>
+                    <div class="list-group-item mb-2">
+                        <div class="fw-bold mb-2">{{t.name}}</div>
+                        <form method="get" action="/teacher_schedule">
+                            <input type="hidden" name="url" value="{{t.url}}">
+                            <button type="submit" class="btn btn-outline-success">Показать расписание</button>
+                        </form>
+                    </div>
                 {% endfor %}
-                </ul>
+                </div>
             {% elif query %}
-                <p>Учитель не найден.</p>
+                <div class="alert alert-warning mt-3">Учитель не найден.</div>
             {% endif %}
-            <br><a href="/">Назад к расписанию класса</a>
+            <br><a href="/" class="btn btn-secondary">Назад к расписанию класса</a>
         </div>
     </body>
     </html>
@@ -328,30 +320,32 @@ def teacher_schedule():
     <head>
         <title>Расписание учителя</title>
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <style>
-            body { font-family: Arial, sans-serif; background: #f7f7f7; }
-            .container { max-width: 600px; margin: 30px auto; background: #fff; padding: 20px; border-radius: 10px; }
-            select, button { font-size: 1em; padding: 5px 10px; margin: 10px 0; }
-            .schedule { margin-top: 20px; }
-            blockquote { background: #eee; border-left: 4px solid #888; margin: 8px 0; padding: 8px 16px; border-radius: 6px; }
-        </style>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     </head>
-    <body>
-        <div class="container">
-            <h2>Расписание учителя</h2>
-            <form method="post">
-                <label for="day">День недели:</label>
-                <select name="day" id="day">
-                    {% for d in headers %}
-                        <option value="{{d}}" {% if d == selected_day %}selected{% endif %}>{{d}}</option>
-                    {% endfor %}
-                </select>
-                <button type="submit">Показать</button>
+    <body class="bg-light">
+        <div class="container py-4">
+            <h2 class="mb-4">Расписание учителя</h2>
+            <form method="post" class="mb-4">
+                <div class="row g-2 align-items-center">
+                    <div class="col-auto">
+                        <label for="day" class="form-label mb-0">День недели:</label>
+                    </div>
+                    <div class="col-auto">
+                        <select name="day" id="day" class="form-select">
+                            {% for d in headers %}
+                                <option value="{{d}}" {% if d == selected_day %}selected{% endif %}>{{d}}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-auto">
+                        <button type="submit" class="btn btn-success">Показать</button>
+                    </div>
+                </div>
             </form>
             <div class="schedule">
                 {{schedule_html|safe}}
             </div>
-            <br><a href="/teachers">Назад к поиску</a>
+            <br><a href="/teachers" class="btn btn-secondary">Назад к поиску</a>
         </div>
     </body>
     </html>
