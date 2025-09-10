@@ -57,79 +57,45 @@ def format_schedule(day_name):
             continue
         lines = [line for line in lesson.split('\n') if line.strip()]
         i = 0
+        klass = None
+        subject = None
+        cabinet = None
+        group_raw = None
         while i < len(lines):
-            subject = None
-            cabinet = None
-            group_lines = []
-            if re.match(r"^[a-zA-Zа-яА-Я._ ]+$", lines[i]) and not re.match(r"^\d+$", lines[i].strip()):
-                subject = lines[i]
+            # Группа вида -1/2, -1/3, 1/2, 1/3 (и без минуса)
+            if re.match(r"-?\d/\d", lines[i]):
+                group_raw = lines[i].lstrip('-')
                 i += 1
-            if i < len(lines) and lines[i] and not re.match(r"-?(\d)/(\d)", lines[i]) and not lines[i].startswith("#") and not (re.match(r"^[a-zA-Zа-яА-Я._ ]+$", lines[i]) and not re.match(r"^\d+$", lines[i].strip())):
+                continue
+            # Класс (например, 3PD, 4PU, 7B, 8C, 6A, 6D)
+            if re.match(r"^\d+[A-Z]+$", lines[i]):
+                klass = lines[i]
+                i += 1
+                continue
+            # Кабинет (номер с буквой, например 104, 104a, 115C, 9m)
+            if re.match(r"^\d+\w*$", lines[i]) and not re.match(r"^\d+[A-Z]+$", lines[i]):
                 cabinet = lines[i]
                 i += 1
-            while i < len(lines):
-                if re.match(r"^[a-zA-Zа-яА-Я._ ]+$", lines[i]) and not re.match(r"^\d+$", lines[i].strip()):
-                    break
-                group_match = re.match(r"-?(\d)/(\d)", lines[i])
-                if group_match:
-                    group_num = group_match.group(1)
-                    group_name = ""
-                    group_cabinet = ""
-                    if i+1 < len(lines) and lines[i+1].startswith("#"):
-                        group_name = lines[i+1][1:]
-                        i += 1
-                    if i+1 < len(lines) and not lines[i+1].startswith("#") and not re.match(r"-?(\d)/(\d)", lines[i+1]):
-                        group_cabinet = lines[i+1]
-                        i += 1
-                    info = f"        группа {group_num}"
-                    if group_name:
-                        info += f" ({group_name})"
-                    if group_cabinet:
-                        info += f", кабинет {group_cabinet}"
-                    group_lines.append(info)
-                    i += 1
-                else:
-                    i += 1
-            while i < len(lines):
-                if re.match(r"^[a-zA-Zа-яА-Я._ ]+$", lines[i]) and lines[i] == subject:
-                    i += 1
-                    if i < len(lines) and lines[i] and not re.match(r"-?(\d)/(\d)", lines[i]) and not lines[i].startswith("#") and not (re.match(r"^[a-zA-Zа-яА-Я._ ]+$", lines[i]) and not re.match(r"^\d+$", lines[i].strip())):
-                        _ = lines[i]
-                        i += 1
-                    while i < len(lines):
-                        if re.match(r"^[a-zA-Zа-яА-Я._ ]+$", lines[i]) and not re.match(r"^\d+$", lines[i].strip()):
-                            break
-                        group_match = re.match(r"-?(\d)/(\d)", lines[i])
-                        if group_match:
-                            group_num = group_match.group(1)
-                            group_name = ""
-                            group_cabinet = ""
-                            if i+1 < len(lines) and lines[i+1].startswith("#"):
-                                group_name = lines[i+1][1:]
-                                i += 1
-                            if i+1 < len(lines) and not lines[i+1].startswith("#") and not re.match(r"-?(\d)/(\d)", lines[i+1]):
-                                group_cabinet = lines[i+1]
-                                i += 1
-                            info = f"        группа {group_num}"
-                            if group_name:
-                                info += f" ({group_name})"
-                            if group_cabinet:
-                                info += f", кабинет {group_cabinet}"
-                            group_lines.append(info)
-                            i += 1
-                        else:
-                            i += 1
-                else:
-                    break
-            if subject:
-                line = f"🕒 <b>{hour}</b>: <b>{subject}</b>"
-                if cabinet and not group_lines:
-                    line += f", кабинет <b>{cabinet}</b>"
-                result.append(line)
-                if group_lines:
-                    result.append(f"<blockquote>{'<br>'.join(group_lines)}</blockquote>")
-            elif not subject and cabinet:
-                result.append(f"🕒 <b>{hour}</b>: кабинет <b>{cabinet}</b>")
+                continue
+            # Предмет
+            if not re.match(r"^\d+[A-Z]+$", lines[i]) and not re.match(r"^\d+\w*$", lines[i]) and not re.match(r"-?\d/\d", lines[i]):
+                subject = lines[i]
+                i += 1
+                continue
+            i += 1
+        # Форматирование: всё в одной цитате
+        block = f"🕒 <b>{hour}</b>"
+        if subject:
+            block += f": <b>{subject}</b>"
+        if cabinet:
+            block += f", кабинет <b>{cabinet}</b>"
+        if klass and group_raw:
+            block += f"<br>Класс: <b>{klass}, {group_raw}</b>"
+        elif klass:
+            block += f"<br>Класс: <b>{klass}</b>"
+        elif group_raw:
+            block += f"<br>Группа: <b>{group_raw}</b>"
+        result.append(f"<blockquote>{block}</blockquote>")
     return "<br>".join(result) if result else "Нет занятий"
 
 @app.route("/", methods=["GET", "POST"])
