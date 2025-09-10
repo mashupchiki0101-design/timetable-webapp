@@ -150,7 +150,7 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # В боте больше нет кнопок для учителей, только мини-приложение
     await query.edit_message_text("Откройте мини-приложение для просмотра расписания.", reply_markup=InlineKeyboardMarkup([
-        [InlineKeyboardButton("Открыть мини-приложение", web_app=WebAppInfo(url="https://fourpuwebapp.onrender.com"))]
+        [InlineKeyboardButton("Открыть мини-приложение", web_app=WebAppInfo(url="http://5.129.236.4:5000/"))]
     ]))
 
 if __name__ == "__main__":
