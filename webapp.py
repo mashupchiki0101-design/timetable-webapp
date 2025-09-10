@@ -258,6 +258,35 @@ def index():
     </html>
     """, headers=headers, selected_day=selected_day, schedule_html=schedule_html)
 
+@app.route("/teachers", methods=["GET", "POST"])
+def teachers():
+    results = []
+    query = ""
+    if request.method == "POST":
+        query = request.form.get("search", "").strip()
+        results = get_filtered_teachers(query)
+    return render_template_string("""
+    <form method="post">
+        <input type="text" name="search" placeholder="Введите имя или фамилию учителя" value="{{query}}">
+        <button type="submit">Поиск</button>
+    </form>
+    {% if results %}
+        <ul>
+        {% for t in results %}
+            <li>
+                <b>{{t.name}}</b>
+                <form method="get" action="/teacher_schedule">
+                    <input type="hidden" name="url" value="{{t.url}}">
+                    <button type="submit">Показать расписание</button>
+                </form>
+            </li>
+        {% endfor %}
+        </ul>
+    {% elif query %}
+        <p>Учитель не найден.</p>
+    {% endif %}
+    """, results=results, query=query)
+
 @app.route("/teacher_schedule")
 def teacher_schedule():
     url = request.args.get("url")
