@@ -266,25 +266,50 @@ def teachers():
         query = request.form.get("search", "").strip()
         results = get_filtered_teachers(query)
     return render_template_string("""
-    <form method="post">
-        <input type="text" name="search" placeholder="Введите имя или фамилию учителя" value="{{query}}">
-        <button type="submit">Поиск</button>
-    </form>
-    {% if results %}
-        <ul>
-        {% for t in results %}
-            <li>
-                <b>{{t.name}}</b>
-                <form method="get" action="/teacher_schedule">
-                    <input type="hidden" name="url" value="{{t.url}}">
-                    <button type="submit">Показать расписание</button>
-                </form>
-            </li>
-        {% endfor %}
-        </ul>
-    {% elif query %}
-        <p>Учитель не найден.</p>
-    {% endif %}
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Поиск по учителям</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+            body { font-family: Arial, sans-serif; background: #f7f7f7; }
+            .container { max-width: 600px; margin: 30px auto; background: #fff; padding: 20px; border-radius: 10px; }
+            input[type="text"], button { font-size: 1em; padding: 5px 10px; margin: 10px 0; }
+            ul { padding-left: 0; }
+            li { list-style: none; margin-bottom: 12px; }
+            .teacher-block { background: #eee; border-left: 4px solid #888; padding: 8px 16px; border-radius: 6px; }
+            .teacher-name { font-weight: bold; margin-bottom: 6px; }
+            form.inline { display: inline; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h2>Поиск по учителям</h2>
+            <form method="post">
+                <input type="text" name="search" placeholder="Введите имя или фамилию учителя" value="{{query}}">
+                <button type="submit">Поиск</button>
+            </form>
+            {% if results %}
+                <ul>
+                {% for t in results %}
+                    <li>
+                        <div class="teacher-block">
+                            <span class="teacher-name">{{t.name}}</span>
+                            <form method="get" action="/teacher_schedule" class="inline">
+                                <input type="hidden" name="url" value="{{t.url}}">
+                                <button type="submit">Показать расписание</button>
+                            </form>
+                        </div>
+                    </li>
+                {% endfor %}
+                </ul>
+            {% elif query %}
+                <p>Учитель не найден.</p>
+            {% endif %}
+            <br><a href="/">Назад к расписанию класса</a>
+        </div>
+    </body>
+    </html>
     """, results=results, query=query)
 
 @app.route("/teacher_schedule", methods=["GET", "POST"])
