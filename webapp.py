@@ -73,7 +73,14 @@ def format_schedule(day_name):
                 i += 1
                 continue
             # Предмет (строка, не кабинет, не группа)
-            if not re.match(r"^\d+[A-Z]+$", lines[i]) and not re.match(r"^\d+\w*$", lines[i]) and not lines[i].startswith("#") and not re.match(r"-?\d/\d", lines[i]) and not re.match(r"^s\d+$", lines[i]):
+            if (
+                not re.match(r"^\d+[A-Z]+$", lines[i]) and
+                not re.match(r"^\d+\w*$", lines[i]) and
+                not lines[i].startswith("#") and
+                not re.match(r"-?\d/\d", lines[i]) and
+                not re.match(r"^s\d+$", lines[i])
+            ):
+                # Любая строка, не распознанная как класс/кабинет/группа, это предмет
                 subject = lines[i]
                 i += 1
                 continue
