@@ -14,10 +14,17 @@ day_map = {
     "пятница": "Piątek"
 }
 
+# ...existing co
+
+# ...existing code...
+
 # --- парсинг расписания ---
 url = "https://dane.ek.zgora.pl/zse/plan/plany/o37.html"
 response = requests.get(url)
 soup = BeautifulSoup(response.content, "html.parser")
+
+class_title_tag = soup.find(class_="tytulnapis")
+current_class = class_title_tag.get_text(strip=True) if class_title_tag else ""
 
 table = soup.find("table", class_="tabela")
 rows = table.find_all("tr")
@@ -57,40 +64,41 @@ def format_schedule(day_name):
             continue
         lines = [line for line in lesson.split('\n') if line.strip()]
         i = 0
-        klass = None
         subject = None
         cabinet = None
         while i < len(lines):
-            # Название группы вместо предмета (строка начинается с #)
-            if lines[i].startswith("#"):
-                subject = lines[i][1:]
-                i += 1
-                continue
             # Кабинет (номер с буквой, например 104, 104a, 115C, 9m)
             if re.match(r"^\d+\w*$", lines[i]) and not re.match(r"^\d+[A-Z]+$", lines[i]):
                 cabinet = lines[i]
                 i += 1
                 continue
-            # Класс (только если это реально класс, например 3PD, 4PU, 7B, 8C, 6A, 6D)
-            if re.match(r"^\d+[A-Z]+$", lines[i]):
-                klass = lines[i]
+            # Предмет (строка, не кабинет, не группа)
+            if not re.match(r"^\d+[A-Z]+$", lines[i]) and not re.match(r"^\d+\w*$", lines[i]) and not lines[i].startswith("#") and not re.match(r"-?\d/\d", lines[i]) and not re.match(r"^s\d+$", lines[i]):
+                subject = lines[i]
                 i += 1
                 continue
-            # Всё остальное считаем предметом
-            if subject is None:
-                subject = lines[i]
+            # Пропустить все группы и классы
             i += 1
+
+        # Специальная логика для кабинетов по классу
+        if current_class == "4PU" and subject:
+            subj_norm = subject.replace(" ", "").lower()
+            if subj_norm == "j.niem.ii":
+                cabinet = "215b"
+            elif subj_norm == "j.ang.i":
+                cabinet = "103"
+
         # Форматирование: всё в одной цитате
         block = f"🕒 <b>{hour}</b>"
         if subject:
             block += f": <b>{subject}</b>"
         if cabinet:
             block += f", кабинет <b>{cabinet}</b>"
-        if klass:
-            block += f"<br>Класс: <b>{klass}</b>"
+        if current_class:
+            block += f"<br>Класс: <b>{current_class}</b>"
         result.append(f"<blockquote>{block}</blockquote>")
     return "<br>".join(result) if result else "Нет занятий"
-
+print(format_schedule(day))
 @app.route("/", methods=["GET", "POST"])
 def index():
     selected_day = headers[0]
