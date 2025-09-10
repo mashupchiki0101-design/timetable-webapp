@@ -51,8 +51,6 @@ for row in rows[header_index+1:]:
             lesson_cell = cells[i+2]
             lessons = []
             for item in lesson_cell.stripped_strings:
-                if re.fullmatch(r"[A-Za-zА-Яа-я]{2}", item):
-                    continue
                 lessons.append(item)
             lesson_text = "\n".join(lessons)
             schedule[day][hour] = lesson_text
