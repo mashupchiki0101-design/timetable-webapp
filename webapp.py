@@ -278,8 +278,8 @@ def teachers():
             ul { padding-left: 0; }
             li { list-style: none; margin-bottom: 12px; }
             .teacher-block { background: #eee; border-left: 4px solid #888; padding: 8px 16px; border-radius: 6px; }
-            .teacher-name { font-weight: bold; margin-bottom: 6px; }
-            form.inline { display: inline; }
+            .teacher-name { font-weight: bold; margin-bottom: 6px; display: block; }
+            form { margin-top: 6px; }
         </style>
     </head>
     <body>
@@ -295,7 +295,7 @@ def teachers():
                     <li>
                         <div class="teacher-block">
                             <span class="teacher-name">{{t.name}}</span>
-                            <form method="get" action="/teacher_schedule" class="inline">
+                            <form method="get" action="/teacher_schedule">
                                 <input type="hidden" name="url" value="{{t.url}}">
                                 <button type="submit">Показать расписание</button>
                             </form>
