@@ -63,7 +63,7 @@ for row in rows[header_index+1:]:
 
 def download_pdf(url, filename="substitutions.pdf"):
     response = requests.get(url)
-    if response.headers.get("Content-Type") != "application/pdf":
+    if response.headers.get("Content-Type") not in ["application/pdf", "application/octet-stream"]:
         raise Exception("Скачан не PDF-файл!")
     with open(filename, "wb") as f:
         f.write(response.content)
