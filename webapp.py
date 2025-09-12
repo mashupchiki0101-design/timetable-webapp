@@ -7,7 +7,7 @@ import pdfplumber
 
 app = Flask(__name__)
 
-PDF_URL = "https://drive.google.com/file/d/11L7mjtdGHjuagx9sqvNbvOAEDTF5tQoB/view?usp=drive_link"
+PDF_URL = "https://drive.google.com/uc?export=download&id=11L7mjtdGHjuagx9sqvNbvOAEDTF5tQoB"
 
 day_map = {
     "понедельник": "Poniedziałek",
