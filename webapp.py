@@ -254,6 +254,7 @@ def index():
         <div class="container py-4">
             <h2 class="mb-4">Расписание</h2>
             <a href="/teachers" class="btn btn-primary mb-3">Поиск по учителям</a>
+            <a href="/substitutions" class="btn btn-warning mb-3">Показать замены</a>
             <form method="post" class="mb-4">
                 <div class="row g-2 align-items-center">
                     <div class="col-auto">
@@ -371,11 +372,28 @@ def teacher_schedule():
     </html>
     """, headers=headers, selected_day=selected_day, schedule_html=schedule_html)
 
+def extract_substitutions(class_name, pdf_path):
+    day_keywords = ["Poniedziałek", "Wtorek", "Środa", "Czwartek", "Piątek"]
+    result = {day: [] for day in day_keywords}
+    current_day = None
+    with pdfplumber.open(pdf_path) as pdf:
+        for page in pdf.pages:
+            text = page.extract_text()
+            if not text:
+                continue
+            for line in text.split('\n'):
+                for day in day_keywords:
+                    if day in line:
+                        current_day = day
+                if class_name.lower() in line.lower() and current_day:
+                    result[current_day].append(line)
+    return result
+
 @app.route("/substitutions", methods=["GET", "POST"])
 def substitutions():
-    result = []
+    result = {}
     class_query = ""
-    error = None  # переменная для текста ошибки
+    error = None
     if request.method == "POST":
         class_query = request.form.get("class_name", "").strip()
         try:
@@ -404,11 +422,18 @@ def substitutions():
                 <div class="alert alert-danger mt-3">Ошибка: {{error}}</div>
             {% endif %}
             {% if result %}
-                <ul class="list-group">
-                {% for item in result %}
-                    <li class="list-group-item">{{item}}</li>
+                {% for day, items in result.items() %}
+                    <h4 class="mt-4">{{day}}</h4>
+                    {% if items %}
+                        <ul class="list-group mb-3">
+                        {% for item in items %}
+                            <li class="list-group-item">{{item}}</li>
+                        {% endfor %}
+                        </ul>
+                    {% else %}
+                        <div class="alert alert-secondary">Нет замен для этого дня.</div>
+                    {% endif %}
                 {% endfor %}
-                </ul>
             {% elif class_query and not error %}
                 <div class="alert alert-warning mt-3">Нет замен для этого класса.</div>
             {% endif %}
