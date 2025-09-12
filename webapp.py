@@ -7,7 +7,7 @@ import pdfplumber
 
 app = Flask(__name__)
 
-PDF_URL = "https://drive.google.com/uc?export=download&id=1vZBCgoYK5_UMn0sjZgLv9QJRO5NgTZC_"
+PDF_URL = "https://drive.google.com/file/d/11L7mjtdGHjuagx9sqvNbvOAEDTF5tQoB/view?usp=drive_link"
 
 day_map = {
     "понедельник": "Poniedziałek",
@@ -63,6 +63,8 @@ for row in rows[header_index+1:]:
 
 def download_pdf(url, filename="substitutions.pdf"):
     response = requests.get(url)
+    if response.headers.get("Content-Type") != "application/pdf":
+        raise Exception("Скачан не PDF-файл!")
     with open(filename, "wb") as f:
         f.write(response.content)
     return filename
@@ -234,46 +236,6 @@ def format_schedule(day_name):
         result.append(f"<blockquote>{block}</blockquote>")
     return "<br>".join(result) if result else "Нет занятий"
 
-@app.route("/substitutions", methods=["GET", "POST"])
-def substitutions():
-    result = []
-    class_query = ""
-    if request.method == "POST":
-        class_query = request.form.get("class_name", "").strip()
-        pdf_path = download_pdf(PDF_URL)
-        result = extract_substitutions(class_query, pdf_path)
-    return render_template_string("""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Замены для класса</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    </head>
-    <body class="bg-light">
-        <div class="container py-4">
-            <h2 class="mb-4">Проверить замены для класса</h2>
-            <form method="post" class="mb-4">
-                <div class="input-group">
-                    <input type="text" name="class_name" class="form-control" placeholder="Введите класс (например, 4PU)" value="{{class_query}}">
-                    <button type="submit" class="btn btn-primary">Показать замены</button>
-                </div>
-            </form>
-            {% if result %}
-                <ul class="list-group">
-                {% for item in result %}
-                    <li class="list-group-item">{{item}}</li>
-                {% endfor %}
-                </ul>
-            {% elif class_query %}
-                <div class="alert alert-warning mt-3">Нет замен для этого класса.</div>
-            {% endif %}
-            <br><a href="/" class="btn btn-secondary">Назад</a>
-        </div>
-    </body>
-    </html>
-    """, result=result, class_query=class_query)
-
 @app.route("/", methods=["GET", "POST"])
 def index():
     selected_day = headers[0]
@@ -408,6 +370,46 @@ def teacher_schedule():
     </body>
     </html>
     """, headers=headers, selected_day=selected_day, schedule_html=schedule_html)
+
+@app.route("/substitutions", methods=["GET", "POST"])
+def substitutions():
+    result = []
+    class_query = ""
+    if request.method == "POST":
+        class_query = request.form.get("class_name", "").strip()
+        pdf_path = download_pdf(PDF_URL)
+        result = extract_substitutions(class_query, pdf_path)
+    return render_template_string("""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Замены для класса</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    </head>
+    <body class="bg-light">
+        <div class="container py-4">
+            <h2 class="mb-4">Проверить замены для класса</h2>
+            <form method="post" class="mb-4">
+                <div class="input-group">
+                    <input type="text" name="class_name" class="form-control" placeholder="Введите класс (например, 4PU)" value="{{class_query}}">
+                    <button type="submit" class="btn btn-primary">Показать замены</button>
+                </div>
+            </form>
+            {% if result %}
+                <ul class="list-group">
+                {% for item in result %}
+                    <li class="list-group-item">{{item}}</li>
+                {% endfor %}
+                </ul>
+            {% elif class_query %}
+                <div class="alert alert-warning mt-3">Нет замен для этого класса.</div>
+            {% endif %}
+            <br><a href="/" class="btn btn-secondary">Назад</a>
+        </div>
+    </body>
+    </html>
+    """, result=result, class_query=class_query)
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
