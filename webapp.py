@@ -282,17 +282,19 @@ def extract_substitutions_for_day(class_name, day_name, pdf_path):
                 if current_day and current_day.strip().capitalize() == day_name.strip().capitalize():
                     if class_pattern.search(line) and is_substitution_line(line):
                         result.append(line)
-                # Если строка не заканчивается на "-", объединяем с переносом (редко нужно)
+                # Объединяем только если строка явно оборвана (заканчивается на "-") и следующая строка НЕ фамилия учителя
                 elif (
                     current_day and current_day.strip().capitalize() == day_name.strip().capitalize()
                     and line.endswith("-")
                     and i + 1 < len(lines)
                 ):
                     next_line = lines[i + 1]
-                    combined = line.rstrip("-") + next_line
-                    if class_pattern.search(combined) and is_substitution_line(combined):
-                        result.append(combined)
-                    i += 1
+                    # Не объединять, если следующая строка — только фамилия (одно слово, нет цифр, нет спецсимволов)
+                    if not re.match(r"^[A-Za-zĄĆĘŁŃÓŚŹŻa-ząćęłńóśźż\-]+$", next_line):
+                        combined = line.rstrip("-") + " " + next_line
+                        if class_pattern.search(combined) and is_substitution_line(combined):
+                            result.append(combined)
+                        i += 1
                 i += 1
     return result
 
