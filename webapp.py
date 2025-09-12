@@ -375,10 +375,14 @@ def teacher_schedule():
 def substitutions():
     result = []
     class_query = ""
+    error = None  # переменная для текста ошибки
     if request.method == "POST":
         class_query = request.form.get("class_name", "").strip()
-        pdf_path = download_pdf(PDF_URL)
-        result = extract_substitutions(class_query, pdf_path)
+        try:
+            pdf_path = download_pdf(PDF_URL)
+            result = extract_substitutions(class_query, pdf_path)
+        except Exception as e:
+            error = str(e)
     return render_template_string("""
     <!DOCTYPE html>
     <html>
@@ -396,20 +400,23 @@ def substitutions():
                     <button type="submit" class="btn btn-primary">Показать замены</button>
                 </div>
             </form>
+            {% if error %}
+                <div class="alert alert-danger mt-3">Ошибка: {{error}}</div>
+            {% endif %}
             {% if result %}
                 <ul class="list-group">
                 {% for item in result %}
                     <li class="list-group-item">{{item}}</li>
                 {% endfor %}
                 </ul>
-            {% elif class_query %}
+            {% elif class_query and not error %}
                 <div class="alert alert-warning mt-3">Нет замен для этого класса.</div>
             {% endif %}
             <br><a href="/" class="btn btn-secondary">Назад</a>
         </div>
     </body>
     </html>
-    """, result=result, class_query=class_query)
+    """, result=result, class_query=class_query, error=error)
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
