@@ -240,7 +240,7 @@ def extract_substitutions_for_day(class_name, day_name, pdf_path):
     result = []
     current_day = None
     class_name_upper = class_name.upper()
-    # Регулярка для поиска класса как отдельного слова, в скобках, после запятой или пробела
+    # Регулярка для поиска класса
     class_pattern = re.compile(
         rf"(\b{re.escape(class_name_upper)}\b|"
         rf"\({re.escape(class_name_upper)}[,\)]|"
@@ -250,15 +250,18 @@ def extract_substitutions_for_day(class_name, day_name, pdf_path):
         rf"\s{re.escape(class_name_upper)}\))",
         re.IGNORECASE
     )
+    # Регулярка для поиска заголовка дня
+    day_header_pattern = re.compile(r"ZASTĘPSTWA.*\((.*?)\)", re.IGNORECASE)
     with pdfplumber.open(pdf_path) as pdf:
         for page in pdf.pages:
             text = page.extract_text()
             if not text:
                 continue
             for line in text.split('\n'):
-                # Обновляем текущий день, если встретили заголовок
-                if day_name in line:
-                    current_day = day_name
+                # Если строка — заголовок дня, обновляем текущий день
+                day_match = day_header_pattern.search(line)
+                if day_match:
+                    current_day = day_match.group(1).strip()
                 # Если строка относится к выбранному дню и содержит класс
                 if current_day == day_name and class_pattern.search(line):
                     result.append(line)
