@@ -73,19 +73,30 @@ def extract_substitutions(class_name, pdf_path):
     day_keywords = ["Poniedziałek", "Wtorek", "Środa", "Czwartek", "Piątek"]
     result = {day: [] for day in day_keywords}
     current_day = None
+    # Получаем короткое имя класса (например, PU из 4PU)
+    short_name = class_name.upper()
+    if len(short_name) > 2 and short_name[:1].isdigit():
+        short_name = short_name[2:]
     with pdfplumber.open(pdf_path) as pdf:
         for page in pdf.pages:
             text = page.extract_text()
             if not text:
                 continue
             for line in text.split('\n'):
-                # Если строка содержит название дня — обновляем текущий день
+                # Обновляем текущий день, если встретили заголовок
                 for day in day_keywords:
                     if day in line:
                         current_day = day
                         break
-                # Если строка содержит класс и текущий день определён — добавляем
-                if class_name.lower() in line.lower() and current_day:
+                # Проверяем наличие класса в строке
+                line_upper = line.upper()
+                # Ищем как "4PU", так и "PU" в скобках
+                if (
+                    class_name.upper() in line_upper or
+                    f"({short_name}" in line_upper or
+                    f",{short_name}" in line_upper or
+                    f" {short_name}" in line_upper
+                ) and current_day:
                     result[current_day].append(line)
     return result
 
