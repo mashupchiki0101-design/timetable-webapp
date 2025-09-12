@@ -240,8 +240,8 @@ def extract_substitutions_for_day(class_name, day_name, pdf_path):
     import re
     result = []
     current_day = None
+    block = ""
     class_name_upper = class_name.upper()
-    # Регулярка для поиска класса
     class_pattern = re.compile(
         rf"(\b{re.escape(class_name_upper)}\b|"
         rf"\({re.escape(class_name_upper)}[,\)]|"
@@ -251,22 +251,28 @@ def extract_substitutions_for_day(class_name, day_name, pdf_path):
         rf"\s{re.escape(class_name_upper)}\))",
         re.IGNORECASE
     )
-    # Регулярка для поиска заголовка дня
     day_header_pattern = re.compile(r"ZASTĘPSTWA.*\((.*?)\)", re.IGNORECASE)
     with pdfplumber.open(pdf_path) as pdf:
         for page in pdf.pages:
             text = page.extract_text()
             if not text:
                 continue
-            for line in text.split('\n'):
-                # Если строка — заголовок дня, обновляем текущий день
+            lines = text.split('\n')
+            for i, line in enumerate(lines):
                 day_match = day_header_pattern.search(line)
                 if day_match:
                     current_day = day_match.group(1).strip()
-                # Если мы внутри нужного дня и строка содержит класс — добавляем
-                if current_day and current_day.strip().capitalize() == day_name.strip().capitalize() and class_pattern.search(line):
-                    result.append(line)
-                # Если встретили новый заголовок дня, current_day обновится
+                    continue
+                # Собираем блок из текущей и следующей строки, если следующая не заголовок и не пустая
+                block = line
+                # Если следующая строка не заголовок дня и не пустая — объединяем
+                if i + 1 < len(lines):
+                    next_line = lines[i + 1]
+                    if not day_header_pattern.search(next_line) and next_line.strip():
+                        block += " " + next_line
+                if current_day and current_day.strip().capitalize() == day_name.strip().capitalize():
+                    if class_pattern.search(block):
+                        result.append(block)
     return result
 
 @app.route("/", methods=["GET", "POST"])
