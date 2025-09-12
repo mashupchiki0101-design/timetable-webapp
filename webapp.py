@@ -240,7 +240,6 @@ def extract_substitutions_for_day(class_name, day_name, pdf_path):
     result = []
     current_day = None
     class_name_upper = class_name.upper()
-    # Регулярка для поиска класса
     class_pattern = re.compile(
         rf"(\b{re.escape(class_name_upper)}\b|"
         rf"\({re.escape(class_name_upper)}[,\)]|"
@@ -250,7 +249,6 @@ def extract_substitutions_for_day(class_name, day_name, pdf_path):
         rf"\s{re.escape(class_name_upper)}\))",
         re.IGNORECASE
     )
-    # Регулярка для поиска заголовка дня
     day_header_pattern = re.compile(r"ZASTĘPSTWA.*\((.*?)\)", re.IGNORECASE)
     with pdfplumber.open(pdf_path) as pdf:
         for page in pdf.pages:
@@ -262,9 +260,11 @@ def extract_substitutions_for_day(class_name, day_name, pdf_path):
                 day_match = day_header_pattern.search(line)
                 if day_match:
                     current_day = day_match.group(1).strip()
-                # Если строка относится к выбранному дню и содержит класс
+                # Если мы внутри нужного дня и строка содержит класс — добавляем
                 if current_day == day_name and class_pattern.search(line):
                     result.append(line)
+                # Если встретили новый заголовок дня, сбрасываем результат для других дней
+                # (это уже реализовано через current_day)
     return result
 
 @app.route("/", methods=["GET", "POST"])
@@ -402,23 +402,6 @@ def teacher_schedule():
     </body>
     </html>
     """, headers=headers, selected_day=selected_day, schedule_html=schedule_html)
-
-def extract_substitutions(class_name, pdf_path):
-    day_keywords = ["Poniedziałek", "Wtorek", "Środa", "Czwartek", "Piątek"]
-    result = {day: [] for day in day_keywords}
-    current_day = None
-    with pdfplumber.open(pdf_path) as pdf:
-        for page in pdf.pages:
-            text = page.extract_text()
-            if not text:
-                continue
-            for line in text.split('\n'):
-                for day in day_keywords:
-                    if day in line:
-                        current_day = day
-                if class_name.lower() in line.lower() and current_day:
-                    result[current_day].append(line)
-    return result
 
 @app.route("/substitutions", methods=["GET", "POST"])
 def substitutions():
