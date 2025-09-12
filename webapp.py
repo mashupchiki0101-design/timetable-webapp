@@ -187,23 +187,6 @@ def format_teacher_schedule_day(schedule, day_name):
         result.append(f"<blockquote>{block}</blockquote>")
     return "<br>".join(result) if result else "Нет занятий"
 
-def extract_substitutions_for_day(class_name, day_name, pdf_path):
-    result = []
-    current_day = None
-    with pdfplumber.open(pdf_path) as pdf:
-        for page in pdf.pages:
-            text = page.extract_text()
-            if not text:
-                continue
-            for line in text.split('\n'):
-                # Обновляем текущий день
-                if day_name in line:
-                    current_day = day_name
-                # Если строка содержит класс и текущий день — добавляем
-                if current_day == day_name and class_name in line:
-                    result.append(line)
-    return result
-
 def format_schedule(day_name):
     result = []
     for hour, lesson in schedule[day_name].items():
@@ -252,6 +235,26 @@ def format_schedule(day_name):
             block += f"<br>Класс: <b>{current_class}</b>"
         result.append(f"<blockquote>{block}</blockquote>")
     return "<br>".join(result) if result else "Нет занятий"
+
+def extract_substitutions_for_day(class_name, day_name, pdf_path):
+    result = []
+    current_day = None
+    class_name_upper = class_name.upper()
+    # Регулярка для поиска класса как отдельного слова или в списке
+    class_pattern = re.compile(rf"\b{re.escape(class_name_upper)}\b", re.IGNORECASE)
+    with pdfplumber.open(pdf_path) as pdf:
+        for page in pdf.pages:
+            text = page.extract_text()
+            if not text:
+                continue
+            for line in text.split('\n'):
+                # Обновляем текущий день, если встретили заголовок
+                if day_name in line:
+                    current_day = day_name
+                # Если строка относится к выбранному дню и содержит класс
+                if current_day == day_name and class_pattern.search(line):
+                    result.append(line)
+    return result
 
 @app.route("/", methods=["GET", "POST"])
 def index():
