@@ -278,20 +278,21 @@ def extract_substitutions_for_day(class_name, day_name, pdf_path):
                     current_day = day_match.group(1).strip()
                     i += 1
                     continue
-                block = line
-                if i + 1 < len(lines):
-                    next_line = lines[i + 1]
-                    if (
-                        next_line
-                        and not next_line.startswith("Dyżur")
-                        and not re.match(r"^\d+l", next_line)
-                        and not day_header_pattern.search(next_line)
-                    ):
-                        block += " " + next_line
-                        i += 1
+                # Проверяем каждую строку отдельно
                 if current_day and current_day.strip().capitalize() == day_name.strip().capitalize():
-                    if class_pattern.search(block) and is_substitution_line(block):
-                        result.append(block)
+                    if class_pattern.search(line) and is_substitution_line(line):
+                        result.append(line)
+                # Если строка не заканчивается на "-", объединяем с переносом (редко нужно)
+                elif (
+                    current_day and current_day.strip().capitalize() == day_name.strip().capitalize()
+                    and line.endswith("-")
+                    and i + 1 < len(lines)
+                ):
+                    next_line = lines[i + 1]
+                    combined = line.rstrip("-") + next_line
+                    if class_pattern.search(combined) and is_substitution_line(combined):
+                        result.append(combined)
+                    i += 1
                 i += 1
     return result
 
