@@ -3,8 +3,11 @@ import requests
 from bs4 import BeautifulSoup
 import re
 import os
+import pdfplumber
 
 app = Flask(__name__)
+
+PDF_URL = "https://drive.google.com/uc?export=download&id=1vZBCgoYK5_UMn0sjZgLv9QJRO5NgTZC_"
 
 day_map = {
     "понедельник": "Poniedziałek",
@@ -13,10 +16,6 @@ day_map = {
     "четверг": "Czwartek",
     "пятница": "Piątek"
 }
-
-# ...existing co
-
-# ...existing code...
 
 # --- парсинг расписания ---
 url = "https://dane.ek.zgora.pl/zse/plan/plany/o37.html"
@@ -61,6 +60,25 @@ for row in rows[header_index+1:]:
                 lessons.append(item)
             lesson_text = "\n".join(lessons)
             schedule[day][hour] = lesson_text
+
+def download_pdf(url, filename="substitutions.pdf"):
+    response = requests.get(url)
+    with open(filename, "wb") as f:
+        f.write(response.content)
+    return filename
+
+def extract_substitutions(class_name, pdf_path):
+    result = []
+    with pdfplumber.open(pdf_path) as pdf:
+        for page in pdf.pages:
+            text = page.extract_text()
+            if not text:
+                continue
+            # Ищем строки, где встречается класс
+            for line in text.split('\n'):
+                if class_name.lower() in line.lower():
+                    result.append(line)
+    return result
 
 def get_teachers():
     url = "https://dane.ek.zgora.pl/zse/plan/index_n.html"
@@ -215,7 +233,47 @@ def format_schedule(day_name):
             block += f"<br>Класс: <b>{current_class}</b>"
         result.append(f"<blockquote>{block}</blockquote>")
     return "<br>".join(result) if result else "Нет занятий"
-print(format_schedule(day))
+
+@app.route("/substitutions", methods=["GET", "POST"])
+def substitutions():
+    result = []
+    class_query = ""
+    if request.method == "POST":
+        class_query = request.form.get("class_name", "").strip()
+        pdf_path = download_pdf(PDF_URL)
+        result = extract_substitutions(class_query, pdf_path)
+    return render_template_string("""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Замены для класса</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    </head>
+    <body class="bg-light">
+        <div class="container py-4">
+            <h2 class="mb-4">Проверить замены для класса</h2>
+            <form method="post" class="mb-4">
+                <div class="input-group">
+                    <input type="text" name="class_name" class="form-control" placeholder="Введите класс (например, 4PU)" value="{{class_query}}">
+                    <button type="submit" class="btn btn-primary">Показать замены</button>
+                </div>
+            </form>
+            {% if result %}
+                <ul class="list-group">
+                {% for item in result %}
+                    <li class="list-group-item">{{item}}</li>
+                {% endfor %}
+                </ul>
+            {% elif class_query %}
+                <div class="alert alert-warning mt-3">Нет замен для этого класса.</div>
+            {% endif %}
+            <br><a href="/" class="btn btn-secondary">Назад</a>
+        </div>
+    </body>
+    </html>
+    """, result=result, class_query=class_query)
+
 @app.route("/", methods=["GET", "POST"])
 def index():
     selected_day = headers[0]
