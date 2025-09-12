@@ -73,10 +73,11 @@ def extract_substitutions(class_name, pdf_path):
     day_keywords = ["Poniedziałek", "Wtorek", "Środa", "Czwartek", "Piątek"]
     result = {day: [] for day in day_keywords}
     current_day = None
-    # Получаем короткое имя класса (например, PU из 4PU)
-    short_name = class_name.upper()
-    if len(short_name) > 2 and short_name[:1].isdigit():
-        short_name = short_name[2:]
+    class_name_upper = class_name.upper()
+    # Получаем короткое имя (например, D из 8D)
+    short_name = class_name_upper
+    if len(short_name) > 1 and short_name[0].isdigit():
+        short_name = short_name[1:]
     with pdfplumber.open(pdf_path) as pdf:
         for page in pdf.pages:
             text = page.extract_text()
@@ -88,16 +89,16 @@ def extract_substitutions(class_name, pdf_path):
                     if day in line:
                         current_day = day
                         break
-                # Проверяем наличие класса в строке
-                line_upper = line.upper()
-                # Ищем как "4PU", так и "PU" в скобках
-                if (
-                    class_name.upper() in line_upper or
-                    f"({short_name}" in line_upper or
-                    f",{short_name}" in line_upper or
-                    f" {short_name}" in line_upper
-                ) and current_day:
-                    result[current_day].append(line)
+                if current_day:
+                    line_upper = line.upper()
+                    # Ищем как "8D", так и "D" в скобках, списках, после запятой или пробела
+                    if (
+                        class_name_upper in line_upper or
+                        f"({short_name}" in line_upper or
+                        f",{short_name}" in line_upper or
+                        f" {short_name}" in line_upper
+                    ):
+                        result[current_day].append(line)
     return result
 
 def get_teachers():
