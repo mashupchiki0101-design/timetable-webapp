@@ -69,38 +69,6 @@ def download_pdf(url, filename="substitutions.pdf"):
         f.write(response.content)
     return filename
 
-def extract_substitutions(class_name, pdf_path):
-    day_keywords = ["Poniedziałek", "Wtorek", "Środa", "Czwartek", "Piątek"]
-    result = {day: [] for day in day_keywords}
-    current_day = None
-    class_name_upper = class_name.upper()
-    # Получаем короткое имя (например, D из 8D)
-    short_name = class_name_upper
-    if len(short_name) > 1 and short_name[0].isdigit():
-        short_name = short_name[1:]
-    with pdfplumber.open(pdf_path) as pdf:
-        for page in pdf.pages:
-            text = page.extract_text()
-            if not text:
-                continue
-            for line in text.split('\n'):
-                # Обновляем текущий день, если встретили заголовок
-                for day in day_keywords:
-                    if day in line:
-                        current_day = day
-                        break
-                if current_day:
-                    line_upper = line.upper()
-                    # Ищем как "8D", так и "D" в скобках, списках, после запятой или пробела
-                    if (
-                        class_name_upper in line_upper or
-                        f"({short_name}" in line_upper or
-                        f",{short_name}" in line_upper or
-                        f" {short_name}" in line_upper
-                    ):
-                        result[current_day].append(line)
-    return result
-
 def get_teachers():
     url = "https://dane.ek.zgora.pl/zse/plan/index_n.html"
     response = requests.get(url)
@@ -117,6 +85,19 @@ teachers_list = get_teachers()
 
 def get_filtered_teachers(query):
     return [t for t in teachers_list if query.lower() in t["name"].lower()]
+
+def get_all_classes(pdf_path):
+    import re
+    classes = set()
+    with pdfplumber.open(pdf_path) as pdf:
+        for page in pdf.pages:
+            text = page.extract_text()
+            if not text:
+                continue
+            # Ищем шаблоны типа 8D, 4PU, 3Q2 и т.д.
+            found = re.findall(r"\b\d+[A-Z]{1,3}\b", text)
+            classes.update(found)
+    return sorted(classes)
 
 def parse_teacher_schedule(teacher_url):
     response = requests.get(teacher_url)
@@ -205,6 +186,23 @@ def format_teacher_schedule_day(schedule, day_name):
             block += f"<br>Класс: <b>{klass}</b>"
         result.append(f"<blockquote>{block}</blockquote>")
     return "<br>".join(result) if result else "Нет занятий"
+
+def extract_substitutions_for_day(class_name, day_name, pdf_path):
+    result = []
+    current_day = None
+    with pdfplumber.open(pdf_path) as pdf:
+        for page in pdf.pages:
+            text = page.extract_text()
+            if not text:
+                continue
+            for line in text.split('\n'):
+                # Обновляем текущий день
+                if day_name in line:
+                    current_day = day_name
+                # Если строка содержит класс и текущий день — добавляем
+                if current_day == day_name and class_name in line:
+                    result.append(line)
+    return result
 
 def format_schedule(day_name):
     result = []
@@ -410,14 +408,22 @@ def extract_substitutions(class_name, pdf_path):
 
 @app.route("/substitutions", methods=["GET", "POST"])
 def substitutions():
-    result = {}
-    class_query = ""
     error = None
+    classes = []
+    days = ["Poniedziałek", "Wtorek", "Środa", "Czwartek", "Piątek"]
+    selected_class = ""
+    selected_day = days[0]
+    result = []
+    try:
+        pdf_path = download_pdf(PDF_URL)
+        classes = get_all_classes(pdf_path)
+    except Exception as e:
+        error = str(e)
     if request.method == "POST":
-        class_query = request.form.get("class_name", "").strip()
+        selected_class = request.form.get("class_name", "")
+        selected_day = request.form.get("day_name", days[0])
         try:
-            pdf_path = download_pdf(PDF_URL)
-            result = extract_substitutions(class_query, pdf_path)
+            result = extract_substitutions_for_day(selected_class, selected_day, pdf_path)
         except Exception as e:
             error = str(e)
     return render_template_string("""
@@ -430,37 +436,51 @@ def substitutions():
     </head>
     <body class="bg-light">
         <div class="container py-4">
-            <h2 class="mb-4">Проверить замены для класса</h2>
+            <h2 class="mb-4">Проверить замены для класса и дня</h2>
             <form method="post" class="mb-4">
-                <div class="input-group">
-                    <input type="text" name="class_name" class="form-control" placeholder="Введите класс (например, 4PU)" value="{{class_query}}">
-                    <button type="submit" class="btn btn-primary">Показать замены</button>
+                <div class="row g-2 align-items-center">
+                    <div class="col-auto">
+                        <label for="class_name" class="form-label mb-0">Класс:</label>
+                    </div>
+                    <div class="col-auto">
+                        <select name="class_name" id="class_name" class="form-select">
+                            {% for c in classes %}
+                                <option value="{{c}}" {% if c == selected_class %}selected{% endif %}>{{c}}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-auto">
+                        <label for="day_name" class="form-label mb-0">День недели:</label>
+                    </div>
+                    <div class="col-auto">
+                        <select name="day_name" id="day_name" class="form-select">
+                            {% for d in days %}
+                                <option value="{{d}}" {% if d == selected_day %}selected{% endif %}>{{d}}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-auto">
+                        <button type="submit" class="btn btn-primary">Показать замены</button>
+                    </div>
                 </div>
             </form>
             {% if error %}
                 <div class="alert alert-danger mt-3">Ошибка: {{error}}</div>
             {% endif %}
             {% if result %}
-                {% for day, items in result.items() %}
-                    <h4 class="mt-4">{{day}}</h4>
-                    {% if items %}
-                        <ul class="list-group mb-3">
-                        {% for item in items %}
-                            <li class="list-group-item">{{item}}</li>
-                        {% endfor %}
-                        </ul>
-                    {% else %}
-                        <div class="alert alert-secondary">Нет замен для этого дня.</div>
-                    {% endif %}
+                <ul class="list-group mb-3">
+                {% for item in result %}
+                    <li class="list-group-item">{{item}}</li>
                 {% endfor %}
-            {% elif class_query and not error %}
-                <div class="alert alert-warning mt-3">Нет замен для этого класса.</div>
+                </ul>
+            {% elif selected_class and selected_day and not error %}
+                <div class="alert alert-warning mt-3">Нет замен для выбранного класса и дня.</div>
             {% endif %}
             <br><a href="/" class="btn btn-secondary">Назад</a>
         </div>
     </body>
     </html>
-    """, result=result, class_query=class_query, error=error)
+    """, classes=classes, days=days, selected_class=selected_class, selected_day=selected_day, result=result, error=error)
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
