@@ -448,7 +448,7 @@ def substitutions():
     </head>
     <body class="bg-light">
         <div class="container py-4">
-            <h2 class="mb-4">Проверить замены для класса и дня</h2>
+            <h2 class="mb-4">Проверить замены для класса и дня(В РАЗРАБОТКЕ)</h2>
             <form method="post" class="mb-4">
                 <div class="row g-2 align-items-center">
                     <div class="col-auto">
