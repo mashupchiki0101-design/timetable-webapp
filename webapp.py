@@ -253,7 +253,7 @@ def extract_substitutions_for_day(class_name, day_name, pdf_path):
     day_header_pattern = re.compile(r"ZASTĘPSTWA.*\((.*?)\)", re.IGNORECASE)
     with pdfplumber.open(pdf_path) as pdf:
         for page in pdf.pages:
-            text = page.extract_text()
+            text = pdf.pages[0].extract_text()
             if not text:
                 continue
             lines = text.split('\n')
@@ -266,13 +266,14 @@ def extract_substitutions_for_day(class_name, day_name, pdf_path):
                     i += 1
                     continue
                 block = line
-                # Объединяем только если следующая строка не начинается с заглавной буквы или не содержит "Dyżur"
+                # Объединяем только если следующая строка НЕ начинается с номера урока (например, "1l", "2l", ...), НЕ содержит "Dyżur", НЕ заголовок дня
                 if i + 1 < len(lines):
                     next_line = lines[i + 1]
                     if (
                         next_line
                         and not next_line.startswith("Dyżur")
-                        and not re.match(r"^[A-ZĄĆĘŁŃÓŚŹŻ]", next_line)
+                        and not re.match(r"^\d+l", next_line)
+                        and not day_header_pattern.search(next_line)
                     ):
                         block += " " + next_line
                         i += 1  # пропускаем объединённую строку
