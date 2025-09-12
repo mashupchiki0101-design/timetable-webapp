@@ -240,7 +240,6 @@ def extract_substitutions_for_day(class_name, day_name, pdf_path):
     import re
     result = []
     current_day = None
-    block = ""
     class_name_upper = class_name.upper()
     class_pattern = re.compile(
         rf"(\b{re.escape(class_name_upper)}\b|"
@@ -258,21 +257,29 @@ def extract_substitutions_for_day(class_name, day_name, pdf_path):
             if not text:
                 continue
             lines = text.split('\n')
-            for i, line in enumerate(lines):
+            i = 0
+            while i < len(lines):
+                line = lines[i]
                 day_match = day_header_pattern.search(line)
                 if day_match:
                     current_day = day_match.group(1).strip()
+                    i += 1
                     continue
-                # Собираем блок из текущей и следующей строки, если следующая не заголовок и не пустая
                 block = line
-                # Если следующая строка не заголовок дня и не пустая — объединяем
+                # Объединяем только если следующая строка не начинается с заглавной буквы или не содержит "Dyżur"
                 if i + 1 < len(lines):
                     next_line = lines[i + 1]
-                    if not day_header_pattern.search(next_line) and next_line.strip():
+                    if (
+                        next_line
+                        and not next_line.startswith("Dyżur")
+                        and not re.match(r"^[A-ZĄĆĘŁŃÓŚŹŻ]", next_line)
+                    ):
                         block += " " + next_line
+                        i += 1  # пропускаем объединённую строку
                 if current_day and current_day.strip().capitalize() == day_name.strip().capitalize():
                     if class_pattern.search(block):
                         result.append(block)
+                i += 1
     return result
 
 @app.route("/", methods=["GET", "POST"])
