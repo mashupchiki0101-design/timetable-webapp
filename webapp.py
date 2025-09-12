@@ -240,8 +240,16 @@ def extract_substitutions_for_day(class_name, day_name, pdf_path):
     result = []
     current_day = None
     class_name_upper = class_name.upper()
-    # Регулярка для поиска класса как отдельного слова или в списке
-    class_pattern = re.compile(rf"\b{re.escape(class_name_upper)}\b", re.IGNORECASE)
+    # Регулярка для поиска класса как отдельного слова, в скобках, после запятой или пробела
+    class_pattern = re.compile(
+        rf"(\b{re.escape(class_name_upper)}\b|"
+        rf"\({re.escape(class_name_upper)}[,\)]|"
+        rf",\s*{re.escape(class_name_upper)}[,\)]|"
+        rf"\s{re.escape(class_name_upper)}\s|"
+        rf"\({re.escape(class_name_upper)}\s|"
+        rf"\s{re.escape(class_name_upper)}\))",
+        re.IGNORECASE
+    )
     with pdfplumber.open(pdf_path) as pdf:
         for page in pdf.pages:
             text = page.extract_text()
