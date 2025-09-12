@@ -70,16 +70,23 @@ def download_pdf(url, filename="substitutions.pdf"):
     return filename
 
 def extract_substitutions(class_name, pdf_path):
-    result = []
+    day_keywords = ["Poniedziałek", "Wtorek", "Środa", "Czwartek", "Piątek"]
+    result = {day: [] for day in day_keywords}
+    current_day = None
     with pdfplumber.open(pdf_path) as pdf:
         for page in pdf.pages:
             text = page.extract_text()
             if not text:
                 continue
-            # Ищем строки, где встречается класс
             for line in text.split('\n'):
-                if class_name.lower() in line.lower():
-                    result.append(line)
+                # Если строка содержит название дня — обновляем текущий день
+                for day in day_keywords:
+                    if day in line:
+                        current_day = day
+                        break
+                # Если строка содержит класс и текущий день определён — добавляем
+                if class_name.lower() in line.lower() and current_day:
+                    result[current_day].append(line)
     return result
 
 def get_teachers():
