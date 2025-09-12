@@ -264,7 +264,7 @@ def extract_substitutions_for_day(class_name, day_name, pdf_path):
                 if day_match:
                     current_day = day_match.group(1).strip()
                 # Если мы внутри нужного дня и строка содержит класс — добавляем
-                if current_day == day_name and class_pattern.search(line):
+                if current_day and current_day.strip().capitalize() == day_name.strip().capitalize() and class_pattern.search(line):
                     result.append(line)
                 # Если встретили новый заголовок дня, current_day обновится
     return result
