@@ -236,6 +236,19 @@ def format_schedule(day_name):
         result.append(f"<blockquote>{block}</blockquote>")
     return "<br>".join(result) if result else "Нет занятий"
 
+def is_substitution_line(line):
+    # Ключевые слова, которые НЕ являются заменой
+    exclude_keywords = [
+        "Dyżur", "wycieczka", "warsztaty", "uczestniczą", "sklepik", "stołówka",
+        "przerwy", "przed szkołą", "szatnia", "połączy", "część", "sala gim.", "parter"
+    ]
+    # Строка начинается с номера урока (например, "1l", "2l", ...) или содержит "zwolniona", "świetlica"
+    if any(word in line for word in exclude_keywords):
+        return False
+    if re.match(r"^\d+l", line) or "zwolniona" in line or "świetlica" in line:
+        return True
+    return False
+
 def extract_substitutions_for_day(class_name, day_name, pdf_path):
     import re
     result = []
@@ -277,7 +290,7 @@ def extract_substitutions_for_day(class_name, day_name, pdf_path):
                         block += " " + next_line
                         i += 1
                 if current_day and current_day.strip().capitalize() == day_name.strip().capitalize():
-                    if class_pattern.search(block):
+                    if class_pattern.search(block) and is_substitution_line(block):
                         result.append(block)
                 i += 1
     return result
