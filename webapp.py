@@ -236,28 +236,6 @@ def format_schedule(day_name):
         result.append(f"<blockquote>{block}</blockquote>")
     return "<br>".join(result) if result else "Нет занятий"
 
-def generate_full_schedule_table():
-    # Собираем все уникальные часы
-    all_hours = set()
-    for day in schedule:
-        all_hours.update(schedule[day].keys())
-    all_hours = sorted(all_hours)
-    # Формируем HTML-таблицу
-    html = '<div class="table-responsive"><table class="table table-bordered table-striped align-middle text-center">'
-    html += "<thead><tr><th>Время</th>"
-    for day in headers:
-        html += f"<th>{day}</th>"
-    html += "</tr></thead><tbody>"
-    for hour in all_hours:
-        html += f"<tr><td><b>{hour}</b></td>"
-        for day in headers:
-            lesson = schedule[day].get(hour, "")
-            # Делаем переносы строк для читаемости
-            cell = "<br>".join([line for line in lesson.split('\n') if line.strip()]) if lesson.strip() else ""
-            html += f"<td>{cell}</td>"
-        html += "</tr>"
-    html += "</tbody></table></div>"
-    return html
 
 def is_substitution_line(line):
     # Ключевые слова, которые НЕ являются заменой
@@ -340,7 +318,6 @@ def index():
             <h2 class="mb-4">Расписание</h2>
             <a href="/teachers" class="btn btn-primary mb-3">Поиск по учителям</a>
             <a href="/substitutions" class="btn btn-warning mb-3">Показать замены</a>
-            <a href="/full_schedule" class="btn btn-secondary mb-3">Полное расписание</a>    
             <form method="post" class="mb-4">
                 <div class="row g-2 align-items-center">
                     <div class="col-auto">
@@ -533,27 +510,6 @@ def substitutions():
     </body>
     </html>
     """, classes=classes, days=days, selected_class=selected_class, selected_day=selected_day, result=result, error=error)
-
-@app.route("/full_schedule")
-def full_schedule():
-    table_html = generate_full_schedule_table()
-    return render_template_string("""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Полное расписание</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    </head>
-    <body class="bg-light">
-        <div class="container py-4">
-            <h2 class="mb-4">Полное расписание класса</h2>
-            <a href="/" class="btn btn-secondary mb-3">Назад</a>
-            {{table_html|safe}}
-        </div>
-    </body>
-    </html>
-    """, table_html=table_html)
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
